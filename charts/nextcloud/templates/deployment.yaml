@@ -164,7 +164,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: {{ .Values.redis.existingSecret }}
-              key: {{ .Values.redis.existingSecretKey }}
+              key: {{ .Values.redis.existingSecretPasswordKey }}
         {{- else }}
         - name: REDIS_HOST_PASSWORD
           value: {{ .Values.redis.password }}
@@ -207,7 +207,7 @@ spec:
           successThreshold: {{ .Values.readinessProbe.successThreshold }}
           failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
         {{- end }}
-        {{- if .Values.startupProbe.enabled }}
+        {{- if and .Values.startupProbe.enabled (not .Values.nginx.enabled) }}
         startupProbe:
           httpGet:
             path: /status.php
@@ -340,7 +340,7 @@ spec:
       {{- if .Values.mariadb.enabled }}
       initContainers:
       - name: mariadb-isalive
-        image: bitnami/mariadb
+        image: {{ .Values.mariadb.image.repository }}:{{ .Values.mariadb.image.tag }}
         env:
           - name: MYSQL_USER
             valueFrom:
@@ -359,7 +359,7 @@ spec:
       {{- else if .Values.postgresql.enabled }}
       initContainers:
       - name: postgresql-isready
-        image: bitnami/postgresql
+        image: {{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}
         env:
           - name: POSTGRES_USER
             valueFrom:
@@ -423,4 +423,7 @@ spec:
         {{- toYaml . | nindent 10 }}
         {{- end }}
         {{- end }}
+      {{- end }}
+      {{- if .Values.rbac.enabled }}
+      serviceAccountName: {{ .Values.rbac.serviceaccount.name }}
       {{- end }}
